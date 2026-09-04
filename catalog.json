@@ -8,7 +8,18 @@
       "author": "WANG XINHE",
       "designShortEdge": 2160,
       "engineMin": 1,
+      "sizeBytes": 2598339,
       "downloadUrl": "https://raw.githubusercontent.com/wangxinhe2025/Sword-X_HiFi_Skins/common/skins/Cassette.zip"
+    },
+    {
+      "id": "Cassette-Cream2",
+      "title": "奶白磁带 / Cassette Cream",
+      "version": "1.0.0",
+      "author": "WANG XINHE",
+      "designShortEdge": 2160,
+      "engineMin": 1,
+      "sizeBytes": 2592310,
+      "downloadUrl": "https://raw.githubusercontent.com/wangxinhe2025/Sword-X_HiFi_Skins/common/skins/Cassette-Cream2.zip"
     },
     {
       "id": "EarthAAA",
@@ -17,6 +28,7 @@
       "author": "WANG XINHE",
       "designShortEdge": 2160,
       "engineMin": 1,
+      "sizeBytes": 385831,
       "downloadUrl": "https://raw.githubusercontent.com/wangxinhe2025/Sword-X_HiFi_Skins/common/skins/EarthAAA.zip"
     },
     {
@@ -26,6 +38,7 @@
       "author": "WANG XINHE",
       "designShortEdge": 2160,
       "engineMin": 1,
+      "sizeBytes": 1206787,
       "downloadUrl": "https://raw.githubusercontent.com/wangxinhe2025/Sword-X_HiFi_Skins/common/skins/Ink.zip"
     }
   ]

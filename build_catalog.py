@@ -155,6 +155,7 @@ def meta_from_skin_json(text: str, skin_id: str) -> dict:
         "author": author,
         "designShortEdge": design,
         "engineMin": engine_min,
+        "sizeBytes": 0,
         "downloadUrl": RAW_ZIP_URL.format(id=skin_id),
     }
 
@@ -164,7 +165,14 @@ def read_folder_skin(folder: Path) -> dict:
     if not skin_json.is_file():
         raise FileNotFoundError("missing skin.json")
     text = read_text_bytes(skin_json.read_bytes())
-    return meta_from_skin_json(text, folder.name)
+    meta = meta_from_skin_json(text, folder.name)
+    # 文件夹尚未打包时用内容合计作参考；正式 catalog 以 zip 体积为准
+    total = 0
+    for path in folder.rglob("*"):
+        if path.is_file() and path.name not in {".DS_Store", "Thumbs.db"}:
+            total += path.stat().st_size
+    meta["sizeBytes"] = int(total)
+    return meta
 
 
 def read_zip_skin(zip_path: Path) -> dict:
@@ -173,7 +181,9 @@ def read_zip_skin(zip_path: Path) -> dict:
         if not found:
             raise FileNotFoundError("skin.json not in zip")
         _, text = found
-        return meta_from_skin_json(text, zip_path.stem)
+        meta = meta_from_skin_json(text, zip_path.stem)
+    meta["sizeBytes"] = int(zip_path.stat().st_size)
+    return meta
 
 
 def pack_folder_to_zip(folder: Path, zip_path: Path) -> None:
@@ -256,7 +266,8 @@ def collect_entries() -> list[dict]:
                 print(
                     f"[zip] {skin_id}: title={meta['title']!r} "
                     f"version={meta['version']!r} author={meta['author']!r} "
-                    f"design={meta['designShortEdge']} engineMin={meta['engineMin']}"
+                    f"design={meta['designShortEdge']} engineMin={meta['engineMin']} "
+                    f"size={meta['sizeBytes']}"
                 )
             except Exception as ex:
                 eprint(f"[skip zip] {entry.name}: {ex}")
@@ -268,7 +279,8 @@ def collect_entries() -> list[dict]:
                 print(
                     f"[folder] {entry.name}: title={meta['title']!r} "
                     f"version={meta['version']!r} author={meta['author']!r} "
-                    f"design={meta['designShortEdge']} engineMin={meta['engineMin']}"
+                    f"design={meta['designShortEdge']} engineMin={meta['engineMin']} "
+                    f"size~={meta['sizeBytes']}"
                 )
             except Exception as ex:
                 eprint(f"[skip folder] {entry.name}: {ex}")
