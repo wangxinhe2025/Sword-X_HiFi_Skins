@@ -15,12 +15,14 @@ Windows 注意: 不要用 python3（常指向 Microsoft Store 占位符，退出
   - 皮肤 id / 下载名 = 文件夹名或 zip 主文件名（不含扩展名）
   - 从 skin.json 读取管理器所需元数据
   - 写出仓库根目录 catalog.json（format: sword-x-skin-catalog/1）
+  - 每条皮肤含 zip 的 sizeBytes 与 md5
   - 文件夹皮肤：压缩为 skins/<名>.zip 后删除文件夹（--dry-run 不删、不写盘）
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -50,6 +52,15 @@ DEFAULT_AUTHOR = "WANG XINHE"
 
 def eprint(*args: object) -> None:
     print(*args, file=sys.stderr)
+
+
+def file_md5(path: Path) -> str:
+    """计算文件 MD5（小写十六进制）。"""
+    h = hashlib.md5()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def read_text_bytes(data: bytes) -> str:
@@ -156,6 +167,7 @@ def meta_from_skin_json(text: str, skin_id: str) -> dict:
         "designShortEdge": design,
         "engineMin": engine_min,
         "sizeBytes": 0,
+        "md5": "",
         "downloadUrl": RAW_ZIP_URL.format(id=skin_id),
     }
 
@@ -166,12 +178,13 @@ def read_folder_skin(folder: Path) -> dict:
         raise FileNotFoundError("missing skin.json")
     text = read_text_bytes(skin_json.read_bytes())
     meta = meta_from_skin_json(text, folder.name)
-    # 文件夹尚未打包时用内容合计作参考；正式 catalog 以 zip 体积为准
+    # 文件夹尚未打包时用内容合计作参考；正式 catalog 以 zip 体积 / md5 为准
     total = 0
     for path in folder.rglob("*"):
         if path.is_file() and path.name not in {".DS_Store", "Thumbs.db"}:
             total += path.stat().st_size
     meta["sizeBytes"] = int(total)
+    meta["md5"] = ""
     return meta
 
 
@@ -183,6 +196,7 @@ def read_zip_skin(zip_path: Path) -> dict:
         _, text = found
         meta = meta_from_skin_json(text, zip_path.stem)
     meta["sizeBytes"] = int(zip_path.stat().st_size)
+    meta["md5"] = file_md5(zip_path)
     return meta
 
 
@@ -267,7 +281,7 @@ def collect_entries() -> list[dict]:
                     f"[zip] {skin_id}: title={meta['title']!r} "
                     f"version={meta['version']!r} author={meta['author']!r} "
                     f"design={meta['designShortEdge']} engineMin={meta['engineMin']} "
-                    f"size={meta['sizeBytes']}"
+                    f"size={meta['sizeBytes']} md5={meta['md5']}"
                 )
             except Exception as ex:
                 eprint(f"[skip zip] {entry.name}: {ex}")
@@ -280,7 +294,7 @@ def collect_entries() -> list[dict]:
                     f"[folder] {entry.name}: title={meta['title']!r} "
                     f"version={meta['version']!r} author={meta['author']!r} "
                     f"design={meta['designShortEdge']} engineMin={meta['engineMin']} "
-                    f"size~={meta['sizeBytes']}"
+                    f"size~={meta['sizeBytes']} md5=(after zip)"
                 )
             except Exception as ex:
                 eprint(f"[skip folder] {entry.name}: {ex}")
